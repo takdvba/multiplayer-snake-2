@@ -7,6 +7,7 @@ const GRID_HEIGHT = CANVAS_HEIGHT / GRID_SIZE;
 
 let gameState = 'menu'; // menu, playing, gameOver
 let winCondition = 100;
+let gameEndReason = ''; // Reason why game ended
 
 // Player 1 - Red (Arrow Keys)
 let snake1 = [
@@ -51,6 +52,7 @@ const score2Display = document.getElementById('score2');
 const winConditionDisplay = document.getElementById('winCondition');
 const winnerAnnouncement = document.getElementById('winnerAnnouncement');
 const finalScores = document.getElementById('finalScores');
+const gameEndReason_Display = document.getElementById('gameEndReason');
 
 // Event listeners for difficulty selection
 document.querySelectorAll('.difficulty-btn').forEach(btn => {
@@ -117,6 +119,7 @@ function startGame() {
     score2 = 0;
 
     food = generateFood();
+    gameEndReason = '';
     
     winConditionDisplay.textContent = `${winCondition} to win`;
     updateScoreDisplay();
@@ -139,23 +142,27 @@ function gameLoop() {
     checkFoodCollision();
 
     // Check collisions
-    if (checkSelfCollision(snake1) || checkBoundaryCollision(snake1)) {
+    if (checkSelfCollision(snake1)) {
+        gameEndReason = 'Player 1 hit their own body!';
         endGame(2); // Player 2 wins
         return;
     }
 
-    if (checkSelfCollision(snake2) || checkBoundaryCollision(snake2)) {
+    if (checkSelfCollision(snake2)) {
+        gameEndReason = 'Player 2 hit their own body!';
         endGame(1); // Player 1 wins
         return;
     }
 
     // Check win condition
     if (score1 >= winCondition) {
+        gameEndReason = `Player 1 reached ${winCondition} points first!`;
         endGame(1);
         return;
     }
 
     if (score2 >= winCondition) {
+        gameEndReason = `Player 2 reached ${winCondition} points first!`;
         endGame(2);
         return;
     }
@@ -166,10 +173,14 @@ function gameLoop() {
 
 function moveSnake(snake, direction) {
     const head = snake[0];
-    const newHead = {
+    let newHead = {
         x: head.x + direction.x,
         y: head.y + direction.y
     };
+
+    // Wrap around the boundaries (torus topology)
+    newHead.x = (newHead.x + GRID_WIDTH) % GRID_WIDTH;
+    newHead.y = (newHead.y + GRID_HEIGHT) % GRID_HEIGHT;
 
     snake.unshift(newHead);
     snake.pop();
@@ -226,11 +237,6 @@ function checkSelfCollision(snake) {
         }
     }
     return false;
-}
-
-function checkBoundaryCollision(snake) {
-    const head = snake[0];
-    return head.x < 0 || head.x >= GRID_WIDTH || head.y < 0 || head.y >= GRID_HEIGHT;
 }
 
 function updateScoreDisplay() {
@@ -368,6 +374,11 @@ function endGame(winner) {
         <div>Player 2 (Cyan): <strong>${score2}</strong> points</div>
         <div style="margin-top: 20px; font-size: 1.1em;">Win Condition: <strong>${winCondition}</strong> points</div>
     `;
+
+    // Display the reason why game ended
+    if (gameEndReason_Display) {
+        gameEndReason_Display.textContent = gameEndReason;
+    }
 }
 
 function returnToMenu() {
